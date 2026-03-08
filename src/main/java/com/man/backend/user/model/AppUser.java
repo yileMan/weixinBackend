@@ -19,8 +19,14 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false, unique = true, length = 32)
+    private String userId;
+
     @Column(nullable = false, unique = true, length = 128)
     private String openid;
+
+    @Column(nullable = false, length = 64)
+    private String nickname;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -31,9 +37,11 @@ public class AppUser {
     public AppUser() {
     }
 
-    public AppUser(Long id, String openid) {
+    public AppUser(Long id, String userId, String openid, String nickname) {
         this.id = id;
+        this.userId = userId;
         this.openid = openid;
+        this.nickname = nickname;
     }
 
     @PrePersist
@@ -52,8 +60,16 @@ public class AppUser {
         return id;
     }
 
+    public String getUserId() {
+        return userId;
+    }
+
     public String getOpenid() {
         return openid;
+    }
+
+    public String getNickname() {
+        return nickname;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -68,8 +84,16 @@ public class AppUser {
         this.id = id;
     }
 
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
     public void setOpenid(String openid) {
         this.openid = openid;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {

@@ -1,6 +1,7 @@
 package com.man.backend.auth.controller;
 
 import com.man.backend.auth.dto.OpenidCodeRequest;
+import com.man.backend.user.model.AppUser;
 import com.man.backend.auth.service.WechatAuthService;
 import com.man.backend.user.service.UserService;
 import org.slf4j.Logger;
@@ -33,12 +34,18 @@ public class AuthController {
         log.info("POST /api/auth/openid codeLength={}", code == null ? 0 : code.length());
 
         String openid = wechatAuthService.exchangeCodeForOpenid(request == null ? null : request.getCode());
-        userService.getOrCreateByOpenid(openid);
+        AppUser user = userService.getOrCreateByOpenid(openid);
         log.info("POST /api/auth/openid success openid={}", maskOpenid(openid));
 
         return ResponseEntity.ok(Map.of(
                 "openid", openid,
-                "data", Map.of("openid", openid)
+                "userId", user.getUserId(),
+                "nickname", user.getNickname(),
+                "data", Map.of(
+                        "openid", openid,
+                        "userId", user.getUserId(),
+                        "nickname", user.getNickname()
+                )
         ));
     }
 
