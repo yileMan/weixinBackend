@@ -2,13 +2,19 @@ package com.man.backend.auth.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//import tools.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 public class WechatAuthService {
@@ -16,17 +22,20 @@ public class WechatAuthService {
     private static final Logger log = LoggerFactory.getLogger(WechatAuthService.class);
 
     private final RestClient restClient;
+    private final JsonMapper jsonMapper;
     private final String appId;
     private final String appSecret;
 
     public WechatAuthService(
             @Value("${wechat.miniapp.app-id:}") String appId,
-            @Value("${wechat.miniapp.app-secret:}") String appSecret) {
+            @Value("${wechat.miniapp.app-secret:}") String appSecret,
+            JsonMapper jsonMapper) {
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.weixin.qq.com")
                 .build();
         this.appId = appId;
         this.appSecret = appSecret;
+        this.jsonMapper = jsonMapper;
     }
 
     public String exchangeCodeForOpenid(String code) {
@@ -45,7 +54,7 @@ public class WechatAuthService {
                 normalizedCode.length());
 
         try {
-            JsonNode response = restClient.get()
+            ResponseEntity<String> responseEntity = restClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/sns/jscode2session")
                             .queryParam("appid", appId)
@@ -53,12 +62,33 @@ public class WechatAuthService {
                             .queryParam("js_code", normalizedCode)
                             .queryParam("grant_type", "authorization_code")
                             .build())
+                    .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
-                    .body(JsonNode.class);
+                    .toEntity(String.class);
 
-            if (response == null) {
+            String responseText = responseEntity.getBody();
+            MediaType contentType = responseEntity.getHeaders().getContentType();
+            log.info("WeChat response status={}, contentType={}",
+                    responseEntity.getStatusCode().value(),
+                    contentType == null ? "unknown" : contentType.toString());
+
+            if (responseText == null || responseText.isBlank()) {
                 log.error("WeChat response is null");
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "wechat response is empty");
+            }
+
+            String normalizedResponse = stripBom(responseText).trim();
+            if (!normalizedResponse.startsWith("{") && !normalizedResponse.startsWith("[")) {
+                log.error("WeChat response is not JSON: {}", truncate(normalizedResponse, 512));
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "wechat response is not json");
+            }
+
+            JsonNode response;
+            try {
+                response = jsonMapper.readTree(normalizedResponse);
+            } catch (JacksonException ex) {
+                log.error("WeChat response is not valid JSON: {}", truncate(normalizedResponse, 512), ex);
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "wechat response is not valid json", ex);
             }
 
             if (response.hasNonNull("openid")) {
@@ -106,5 +136,22 @@ public class WechatAuthService {
             return "***";
         }
         return trimmed.substring(0, 3) + "***" + trimmed.substring(trimmed.length() - 3);
+    }
+
+    private String stripBom(String text) {
+        if (text != null && !text.isEmpty() && text.charAt(0) == '\uFEFF') {
+            return text.substring(1);
+        }
+        return text;
+    }
+
+    private String truncate(String text, int maxLen) {
+        if (text == null) {
+            return "null";
+        }
+        if (text.length() <= maxLen) {
+            return text;
+        }
+        return text.substring(0, maxLen) + "...(truncated)";
     }
 }
