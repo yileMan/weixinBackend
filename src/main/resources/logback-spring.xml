@@ -9,6 +9,19 @@
         </encoder>
     </appender>
 
+    <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/app.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/app.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
     <appender name="CARD_CONTROLLER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/card-controller.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -35,6 +48,19 @@
         </encoder>
     </appender>
 
+    <appender name="AUTH_SERVICE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/auth-service.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/auth-service.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
     <appender name="USER_CONTROLLER_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/user-controller.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -48,22 +74,70 @@
         </encoder>
     </appender>
 
+    <appender name="CARD_SERVICE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/card-service.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/card-service.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="USER_SERVICE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/user-service.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/user-service.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
     <logger name="com.man.backend.card.controller.CardController" level="INFO" additivity="false">
         <appender-ref ref="CARD_CONTROLLER_FILE"/>
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP_FILE"/>
     </logger>
 
     <logger name="com.man.backend.auth.controller.AuthController" level="INFO" additivity="false">
         <appender-ref ref="AUTH_CONTROLLER_FILE"/>
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP_FILE"/>
+    </logger>
+
+    <logger name="com.man.backend.auth.service.WechatAuthService" level="INFO" additivity="false">
+        <appender-ref ref="AUTH_SERVICE_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP_FILE"/>
     </logger>
 
     <logger name="com.man.backend.user.controller.UserController" level="INFO" additivity="false">
         <appender-ref ref="USER_CONTROLLER_FILE"/>
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP_FILE"/>
+    </logger>
+
+    <logger name="com.man.backend.card.service.CardService" level="INFO" additivity="false">
+        <appender-ref ref="CARD_SERVICE_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP_FILE"/>
+    </logger>
+
+    <logger name="com.man.backend.user.service.UserService" level="INFO" additivity="false">
+        <appender-ref ref="USER_SERVICE_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP_FILE"/>
     </logger>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP_FILE"/>
     </root>
 </configuration>

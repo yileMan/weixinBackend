@@ -5,6 +5,8 @@ import com.man.backend.card.model.Card;
 import com.man.backend.card.repository.CardRepository;
 import com.man.backend.user.model.AppUser;
 import com.man.backend.user.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,8 @@ import java.util.Optional;
 
 @Service
 public class CardService {
+
+    private static final Logger log = LoggerFactory.getLogger(CardService.class);
 
     private final CardRepository cardRepository;
     private final UserService userService;
@@ -42,7 +46,11 @@ public class CardService {
     public Optional<Card> update(Long id, CardRequest request) {
         validateCardRequest(request);
         String normalizedOpenid = request.getOpenid().trim();
-        return cardRepository.findByIdAndUserOpenid(id, normalizedOpenid)
+        Optional<Card> cardOptional = cardRepository.findByIdAndUserOpenid(id, normalizedOpenid);
+        if (cardOptional.isEmpty()) {
+            log.warn("Update card not found: id={}, openid={}", id, maskOpenid(normalizedOpenid));
+        }
+        return cardOptional
                 .map(card -> {
                     card.setName(request.getName().trim());
                     card.setPurchaseDate(request.getPurchaseDate());
@@ -56,6 +64,7 @@ public class CardService {
         String normalizedOpenid = requireNonBlank(openid, "openid is required");
         Optional<Card> cardOptional = cardRepository.findByIdAndUserOpenid(id, normalizedOpenid);
         if (cardOptional.isEmpty()) {
+            log.warn("Delete card not found: id={}, openid={}", id, maskOpenid(normalizedOpenid));
             return false;
         }
         cardRepository.delete(cardOptional.get());
@@ -64,22 +73,41 @@ public class CardService {
 
     private void validateCardRequest(CardRequest request) {
         if (request == null) {
+            log.warn("Card request body is null");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request body is required");
         }
         requireNonBlank(request.getOpenid(), "openid is required");
         requireNonBlank(request.getName(), "name is required");
         if (request.getPurchaseDate() == null) {
+            log.warn("Card purchaseDate missing: openid={}, name={}",
+                    maskOpenid(request.getOpenid()),
+                    request.getName());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "purchaseDate is required");
         }
         if (request.getAmount() == null) {
+            log.warn("Card amount missing: openid={}, name={}",
+                    maskOpenid(request.getOpenid()),
+                    request.getName());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "amount is required");
         }
     }
 
     private String requireNonBlank(String value, String message) {
         if (value == null || value.trim().isEmpty()) {
+            log.warn("Card request invalid: {}", message);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
         return value.trim();
+    }
+
+    private String maskOpenid(String openid) {
+        if (openid == null || openid.isBlank()) {
+            return "blank";
+        }
+        String trimmed = openid.trim();
+        if (trimmed.length() <= 6) {
+            return "***";
+        }
+        return trimmed.substring(0, 3) + "***" + trimmed.substring(trimmed.length() - 3);
     }
 }
