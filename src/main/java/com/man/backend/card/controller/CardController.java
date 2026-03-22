@@ -1,7 +1,8 @@
 package com.man.backend.card.controller;
 
 import com.man.backend.card.dto.CardRequest;
-import com.man.backend.card.model.Card;
+import com.man.backend.card.dto.CardListResponse;
+import com.man.backend.card.dto.CardResponse;
 import com.man.backend.card.service.CardService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,31 +33,37 @@ public class CardController {
     }
 
     @GetMapping
-    public List<Card> getCards(@RequestParam String openid) {
+    public CardListResponse getCards(@RequestParam String openid) {
         log.info("GET /api/cards openid={}", maskOpenid(openid));
-        return cardService.findAllByOpenid(openid);
+        List<CardResponse> items = cardService.findAllByOpenid(openid)
+                .stream()
+                .map(CardResponse::from)
+                .toList();
+        return new CardListResponse(items);
     }
 
     @PostMapping
-    public ResponseEntity<Card> createCard(@RequestBody CardRequest request) {
-        log.info("POST /api/cards openid={}, name={}, purchaseDate={}, amount={}",
+    public ResponseEntity<CardResponse> createCard(@RequestBody CardRequest request) {
+        log.info("POST /api/cards openid={}, name={}, purchaseDate={}, amount={}, status={}",
                 maskOpenid(request == null ? null : request.getOpenid()),
                 request == null ? null : request.getName(),
                 request == null ? null : request.getPurchaseDate(),
-                request == null ? null : request.getAmount());
-        Card createdCard = cardService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdCard);
+                request == null ? null : request.getAmount(),
+                request == null ? null : request.getStatus());
+        return ResponseEntity.status(HttpStatus.CREATED).body(CardResponse.from(cardService.create(request)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Card> updateCard(@PathVariable Long id, @RequestBody CardRequest request) {
-        log.info("PUT /api/cards/{} openid={}, name={}, purchaseDate={}, amount={}",
+    public ResponseEntity<CardResponse> updateCard(@PathVariable Long id, @RequestBody CardRequest request) {
+        log.info("PUT /api/cards/{} openid={}, name={}, purchaseDate={}, amount={}, status={}",
                 id,
                 maskOpenid(request == null ? null : request.getOpenid()),
                 request == null ? null : request.getName(),
                 request == null ? null : request.getPurchaseDate(),
-                request == null ? null : request.getAmount());
+                request == null ? null : request.getAmount(),
+                request == null ? null : request.getStatus());
         return cardService.update(id, request)
+                .map(CardResponse::from)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
